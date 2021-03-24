@@ -1,20 +1,44 @@
 import javax.sound.sampled.*;
+import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 
 public class SoundRecorder {
+    private static String RECORD = "o Record";
+    private static String STOP = "[ ] Stop";
     private TargetDataLine line;
 
-    public SoundRecorder(File wavFile, long duration) throws LineUnavailableException, IOException{
-        new Thread(() -> {
-            try {
-                Thread.sleep(duration);
-            } catch (InterruptedException ignore) {}
-            line.stop();
-            line.close();
-            System.out.println("Finished");
-        }).start();
+    public SoundRecorder(File wavFile) {
+        SwingUtilities.invokeLater(() -> {
+            JDialog dialog = new JDialog();
+            JButton button = new JButton(RECORD);
+            JLabel label = new JLabel("Saving recording to: " + wavFile);
+            button.addActionListener(e -> {
+                if(button.getText().equals(RECORD)) {
+                    button.setText(STOP);
+                    new Thread(() -> {
+                        try {
+                            record(wavFile);
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+                        }
+                    }).start();
+                } else {
+                    button.setText(RECORD);
+                    line.stop();
+                    line.close();
+                }
+            });
 
-        record(wavFile);
+            JPanel panel = new JPanel(new FlowLayout());
+            panel.add(button);
+            panel.add(label);
+            dialog.setContentPane(panel);
+            dialog.pack();
+            dialog.setLocationRelativeTo(null);
+            dialog.setVisible(true);
+            dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        });
     }
 
     private void record(File wavFile) throws LineUnavailableException, IOException {
@@ -34,6 +58,6 @@ public class SoundRecorder {
     }
 
     public static void main(String[] args) throws LineUnavailableException, IOException{
-        new SoundRecorder(new File(System.getProperty("user.home") + "/Desktop/test.wav"), 5000);
+        new SoundRecorder(new File(System.getProperty("user.home") + "/Desktop/test.wav"));
     }
 }
